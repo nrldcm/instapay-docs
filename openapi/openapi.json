@@ -1,0 +1,734 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "HealthController_live",
+        "summary": "Liveness probe — process is up",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "HealthController_ready",
+        "summary": "Readiness probe — ready to serve traffic",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/ips-payments/service-requests": {
+      "post": {
+        "operationId": "InboundController_serviceRequests",
+        "summary": "Receive an inbound payment instruction (pacs.008) — Leg 2",
+        "description": "The CI delivers a credit transfer to us as receiving participant. We validate, credit the beneficiary, and reply synchronously with a signed pacs.002 status report. Payload = pacs.008.001.08: GrpHdr (settlement amount/date, SttlmInf ClrSys=BNT), CdtTrfTxInf (PmtId InstrId/EndToEndId/TxId, PmtTpInf SvcLvl=SDVA, amount, Dbtr/DbtrAcct/DbtrAgt, Cdtr/CdtrAcct/CdtrAgt).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "A signed ISO 20022 `<Message>` (envelope urn:instapay2019) wrapping the BAH (head.001) and the business document. The `<head:Sgntr>` element MUST contain a valid W3C XMLDSig signature (RSA-SHA256, enveloped, c14n11). pacs.008 credit transfer",
+          "content": {
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "format": "xml",
+                "example": "<Message xmlns=\"urn:instapay2019\" xmlns:head=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\"><AppHdr><head:Fr><head:FIId><head:FinInstnId><head:BICFI>BNETPHMMXXX</head:BICFI></head:FinInstnId></head:FIId></head:Fr><head:To><head:FIId><head:FinInstnId><head:BICFI>NRLDPHM1XXX</head:BICFI></head:FinInstnId></head:FIId></head:To><head:BizMsgIdr>MSG-CT-0001</head:BizMsgIdr><head:MsgDefIdr>pacs.008.001.08</head:MsgDefIdr><head:CreDt>2026-07-16T09:00:00Z</head:CreDt><head:Sgntr></head:Sgntr></AppHdr><CreditTransfer><FIToFICstmrCdtTrf xmlns=\"urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08\"><GrpHdr><MsgId>GRP-0001</MsgId><CreDtTm>2026-07-16T09:00:00Z</CreDtTm><NbOfTxs>1</NbOfTxs><TtlIntrBkSttlmAmt Ccy=\"PHP\">1500.00</TtlIntrBkSttlmAmt><IntrBkSttlmDt>2026-07-16</IntrBkSttlmDt><SttlmInf><SttlmMtd>CLRG</SttlmMtd><ClrSys><Cd>BNT</Cd></ClrSys></SttlmInf></GrpHdr><CdtTrfTxInf><PmtId><InstrId>INSTR-0001</InstrId><EndToEndId>E2E-0001</EndToEndId><TxId>TX-0001</TxId></PmtId><PmtTpInf><SvcLvl><Cd>SDVA</Cd></SvcLvl><LclInstrm><Prtry>IPAY</Prtry></LclInstrm><CtgyPurp><Prtry>CASH</Prtry></CtgyPurp></PmtTpInf><IntrBkSttlmAmt Ccy=\"PHP\">1500.00</IntrBkSttlmAmt><ChrgBr>SLEV</ChrgBr><Dbtr><Nm>Juan Dela Cruz</Nm><Id><PrvtId><Othr><Id>DBTR001</Id></Othr></PrvtId></Id></Dbtr><DbtrAcct><Id><Othr><Id>00123456789</Id></Othr></Id><Tp><Prtry>CASH</Prtry></Tp></DbtrAcct><DbtrAgt><FinInstnId><BICFI>BNETPHMMXXX</BICFI></FinInstnId></DbtrAgt><CdtrAgt><FinInstnId><BICFI>NRLDPHM1XXX</BICFI></FinInstnId></CdtrAgt><Cdtr><Nm>Maria Santos</Nm><Id><PrvtId><Othr><Id>CDTR001</Id></Othr></PrvtId></Id></Cdtr><CdtrAcct><Id><Othr><Id>00987654321</Id></Othr></Id></CdtrAcct><RmtInf><Ustrd>Invoice 123</Ustrd></RmtInf></CdtTrfTxInf></FIToFICstmrCdtTrf></CreditTransfer></Message>"
+              },
+              "examples": {
+                "pacs.008 credit transfer": {
+                  "summary": "pacs.008 credit transfer",
+                  "value": "<Message xmlns=\"urn:instapay2019\" xmlns:head=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\"><AppHdr><head:Fr><head:FIId><head:FinInstnId><head:BICFI>BNETPHMMXXX</head:BICFI></head:FinInstnId></head:FIId></head:Fr><head:To><head:FIId><head:FinInstnId><head:BICFI>NRLDPHM1XXX</head:BICFI></head:FinInstnId></head:FIId></head:To><head:BizMsgIdr>MSG-CT-0001</head:BizMsgIdr><head:MsgDefIdr>pacs.008.001.08</head:MsgDefIdr><head:CreDt>2026-07-16T09:00:00Z</head:CreDt><head:Sgntr></head:Sgntr></AppHdr><CreditTransfer><FIToFICstmrCdtTrf xmlns=\"urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08\"><GrpHdr><MsgId>GRP-0001</MsgId><CreDtTm>2026-07-16T09:00:00Z</CreDtTm><NbOfTxs>1</NbOfTxs><TtlIntrBkSttlmAmt Ccy=\"PHP\">1500.00</TtlIntrBkSttlmAmt><IntrBkSttlmDt>2026-07-16</IntrBkSttlmDt><SttlmInf><SttlmMtd>CLRG</SttlmMtd><ClrSys><Cd>BNT</Cd></ClrSys></SttlmInf></GrpHdr><CdtTrfTxInf><PmtId><InstrId>INSTR-0001</InstrId><EndToEndId>E2E-0001</EndToEndId><TxId>TX-0001</TxId></PmtId><PmtTpInf><SvcLvl><Cd>SDVA</Cd></SvcLvl><LclInstrm><Prtry>IPAY</Prtry></LclInstrm><CtgyPurp><Prtry>CASH</Prtry></CtgyPurp></PmtTpInf><IntrBkSttlmAmt Ccy=\"PHP\">1500.00</IntrBkSttlmAmt><ChrgBr>SLEV</ChrgBr><Dbtr><Nm>Juan Dela Cruz</Nm><Id><PrvtId><Othr><Id>DBTR001</Id></Othr></PrvtId></Id></Dbtr><DbtrAcct><Id><Othr><Id>00123456789</Id></Othr></Id><Tp><Prtry>CASH</Prtry></Tp></DbtrAcct><DbtrAgt><FinInstnId><BICFI>BNETPHMMXXX</BICFI></FinInstnId></DbtrAgt><CdtrAgt><FinInstnId><BICFI>NRLDPHM1XXX</BICFI></FinInstnId></CdtrAgt><Cdtr><Nm>Maria Santos</Nm><Id><PrvtId><Othr><Id>CDTR001</Id></Othr></PrvtId></Id></Cdtr><CdtrAcct><Id><Othr><Id>00987654321</Id></Othr></Id></CdtrAcct><RmtInf><Ustrd>Invoice 123</Ustrd></RmtInf></CdtTrfTxInf></FIToFICstmrCdtTrf></CreditTransfer></Message>"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Processed and accepted (pacs.002)."
+          },
+          "400": {
+            "description": "Structural (admi.002) or business (pacs.002) failure."
+          }
+        },
+        "tags": [
+          "IPS Payments (CI → Participant)"
+        ]
+      }
+    },
+    "/ips-payments/service-responses": {
+      "put": {
+        "operationId": "InboundController_serviceResponses",
+        "summary": "Receive the async result of a payment we originated (pacs.002) — Leg 4",
+        "description": "The CI returns the outcome of a previously submitted instruction. We match it to an in-flight transaction by Original Instruction Id and complete the originator workflow. Payload = pacs.002.001.10: OrgnlGrpInfAndSts (OrgnlMsgId/OrgnlMsgNmId/OrgnlCreDtTm/OrgnlNbOfTxs), TxInfAndSts (OrgnlInstrId — the matching key, TxSts=ACTC|ACWP|RCVD|RJCT, InstgAgt, InstdAgt, OrgnlTxRef amount).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "A signed ISO 20022 `<Message>` (envelope urn:instapay2019) wrapping the BAH (head.001) and the business document. The `<head:Sgntr>` element MUST contain a valid W3C XMLDSig signature (RSA-SHA256, enveloped, c14n11). pacs.002 status report",
+          "content": {
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "format": "xml",
+                "example": "<Message xmlns=\"urn:instapay2019\" xmlns:head=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\"><AppHdr><head:Fr><head:FIId><head:FinInstnId><head:BICFI>BNETPHMMXXX</head:BICFI></head:FinInstnId></head:FIId></head:Fr><head:To><head:FIId><head:FinInstnId><head:BICFI>NRLDPHM1XXX</head:BICFI></head:FinInstnId></head:FIId></head:To><head:BizMsgIdr>MSG-SR-0001</head:BizMsgIdr><head:MsgDefIdr>pacs.002.001.10</head:MsgDefIdr><head:CreDt>2026-07-16T09:00:00Z</head:CreDt><head:Sgntr></head:Sgntr></AppHdr><MessageStatusReport><FIToFIPmtStsRpt xmlns=\"urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10\"><GrpHdr><MsgId>GRP-SR-1</MsgId><CreDtTm>2026-07-16T09:00:00Z</CreDtTm></GrpHdr><OrgnlGrpInfAndSts><OrgnlMsgId>GRP-0001</OrgnlMsgId><OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId><OrgnlCreDtTm>2026-07-16T09:00:00Z</OrgnlCreDtTm><OrgnlNbOfTxs>1</OrgnlNbOfTxs></OrgnlGrpInfAndSts><TxInfAndSts><OrgnlInstrId>INSTR-0001</OrgnlInstrId><OrgnlEndToEndId>E2E-0001</OrgnlEndToEndId><TxSts>ACTC</TxSts><AccptncDtTm>2026-07-16T09:00:01Z</AccptncDtTm><InstgAgt><FinInstnId><BICFI>BNETPHMMXXX</BICFI></FinInstnId></InstgAgt><InstdAgt><FinInstnId><BICFI>NRLDPHM1XXX</BICFI></FinInstnId></InstdAgt><OrgnlTxRef><IntrBkSttlmAmt Ccy=\"PHP\">1500.00</IntrBkSttlmAmt></OrgnlTxRef></TxInfAndSts></FIToFIPmtStsRpt></MessageStatusReport></Message>"
+              },
+              "examples": {
+                "pacs.002 status report": {
+                  "summary": "pacs.002 status report",
+                  "value": "<Message xmlns=\"urn:instapay2019\" xmlns:head=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\"><AppHdr><head:Fr><head:FIId><head:FinInstnId><head:BICFI>BNETPHMMXXX</head:BICFI></head:FinInstnId></head:FIId></head:Fr><head:To><head:FIId><head:FinInstnId><head:BICFI>NRLDPHM1XXX</head:BICFI></head:FinInstnId></head:FIId></head:To><head:BizMsgIdr>MSG-SR-0001</head:BizMsgIdr><head:MsgDefIdr>pacs.002.001.10</head:MsgDefIdr><head:CreDt>2026-07-16T09:00:00Z</head:CreDt><head:Sgntr></head:Sgntr></AppHdr><MessageStatusReport><FIToFIPmtStsRpt xmlns=\"urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10\"><GrpHdr><MsgId>GRP-SR-1</MsgId><CreDtTm>2026-07-16T09:00:00Z</CreDtTm></GrpHdr><OrgnlGrpInfAndSts><OrgnlMsgId>GRP-0001</OrgnlMsgId><OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId><OrgnlCreDtTm>2026-07-16T09:00:00Z</OrgnlCreDtTm><OrgnlNbOfTxs>1</OrgnlNbOfTxs></OrgnlGrpInfAndSts><TxInfAndSts><OrgnlInstrId>INSTR-0001</OrgnlInstrId><OrgnlEndToEndId>E2E-0001</OrgnlEndToEndId><TxSts>ACTC</TxSts><AccptncDtTm>2026-07-16T09:00:01Z</AccptncDtTm><InstgAgt><FinInstnId><BICFI>BNETPHMMXXX</BICFI></FinInstnId></InstgAgt><InstdAgt><FinInstnId><BICFI>NRLDPHM1XXX</BICFI></FinInstnId></InstdAgt><OrgnlTxRef><IntrBkSttlmAmt Ccy=\"PHP\">1500.00</IntrBkSttlmAmt></OrgnlTxRef></TxInfAndSts></FIToFIPmtStsRpt></MessageStatusReport></Message>"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Instruction response accepted."
+          },
+          "400": {
+            "description": "Structural validation failure (admi.002)."
+          }
+        },
+        "tags": [
+          "IPS Payments (CI → Participant)"
+        ]
+      }
+    },
+    "/ips-payments/payment-instructions": {
+      "put": {
+        "operationId": "InboundController_paymentInstructions",
+        "summary": "Payment confirmation (pacs.002) or cancellation (camt.056) — Leg 5",
+        "description": "A camt.056 asks us to cancel/reverse a previously received payment; we reverse if matched and reply with a signed pacs.002 (HTTP 200). A pacs.002 confirmation is acknowledged (204). Cancellation payload = camt.056.001.08: Undrlyg/TxInf with OrgnlInstrId (matched against a previously received payment), OrgnlEndToEndId, OrgnlTxId.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "A signed ISO 20022 `<Message>` (envelope urn:instapay2019) wrapping the BAH (head.001) and the business document. The `<head:Sgntr>` element MUST contain a valid W3C XMLDSig signature (RSA-SHA256, enveloped, c14n11). camt.056 payment cancellation",
+          "content": {
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "format": "xml",
+                "example": "<Message xmlns=\"urn:instapay2019\" xmlns:head=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\"><AppHdr><head:Fr><head:FIId><head:FinInstnId><head:BICFI>BNETPHMMXXX</head:BICFI></head:FinInstnId></head:FIId></head:Fr><head:To><head:FIId><head:FinInstnId><head:BICFI>NRLDPHM1XXX</head:BICFI></head:FinInstnId></head:FIId></head:To><head:BizMsgIdr>MSG-CX-0001</head:BizMsgIdr><head:MsgDefIdr>camt.056.001.08</head:MsgDefIdr><head:CreDt>2026-07-16T09:05:00Z</head:CreDt><head:Sgntr></head:Sgntr></AppHdr><ReturnOfFunds><FIToFIPmtCxlReq xmlns=\"urn:iso:std:iso:20022:tech:xsd:camt.056.001.08\"><Assgnmt><Id>CX-0001</Id><CreDtTm>2026-07-16T09:05:00Z</CreDtTm></Assgnmt><Undrlyg><TxInf><OrgnlInstrId>INSTR-0001</OrgnlInstrId><OrgnlEndToEndId>E2E-0001</OrgnlEndToEndId><OrgnlTxId>TX-0001</OrgnlTxId></TxInf></Undrlyg></FIToFIPmtCxlReq></ReturnOfFunds></Message>"
+              },
+              "examples": {
+                "camt.056 payment cancellation": {
+                  "summary": "camt.056 payment cancellation",
+                  "value": "<Message xmlns=\"urn:instapay2019\" xmlns:head=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\"><AppHdr><head:Fr><head:FIId><head:FinInstnId><head:BICFI>BNETPHMMXXX</head:BICFI></head:FinInstnId></head:FIId></head:Fr><head:To><head:FIId><head:FinInstnId><head:BICFI>NRLDPHM1XXX</head:BICFI></head:FinInstnId></head:FIId></head:To><head:BizMsgIdr>MSG-CX-0001</head:BizMsgIdr><head:MsgDefIdr>camt.056.001.08</head:MsgDefIdr><head:CreDt>2026-07-16T09:05:00Z</head:CreDt><head:Sgntr></head:Sgntr></AppHdr><ReturnOfFunds><FIToFIPmtCxlReq xmlns=\"urn:iso:std:iso:20022:tech:xsd:camt.056.001.08\"><Assgnmt><Id>CX-0001</Id><CreDtTm>2026-07-16T09:05:00Z</CreDtTm></Assgnmt><Undrlyg><TxInf><OrgnlInstrId>INSTR-0001</OrgnlInstrId><OrgnlEndToEndId>E2E-0001</OrgnlEndToEndId><OrgnlTxId>TX-0001</OrgnlTxId></TxInf></Undrlyg></FIToFIPmtCxlReq></ReturnOfFunds></Message>"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cancellation processed (pacs.002)."
+          },
+          "204": {
+            "description": "Confirmation accepted."
+          }
+        },
+        "tags": [
+          "IPS Payments (CI → Participant)"
+        ]
+      }
+    },
+    "/ips-payments/system-notifications": {
+      "post": {
+        "operationId": "InboundController_systemNotifications",
+        "summary": "Receive a CI system event notification (admi.004)",
+        "description": "The CI notifies participants of a system event. Payload = admi.004.001.02: SysEvtNtfctn/EvtInf with EvtCd (event code) and optional EvtDesc / EvtParam.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "A signed ISO 20022 `<Message>` (envelope urn:instapay2019) wrapping the BAH (head.001) and the business document. The `<head:Sgntr>` element MUST contain a valid W3C XMLDSig signature (RSA-SHA256, enveloped, c14n11). admi.004 system notification",
+          "content": {
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "format": "xml",
+                "example": "<Message xmlns=\"urn:instapay2019\" xmlns:head=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\"><AppHdr><head:Fr><head:FIId><head:FinInstnId><head:BICFI>BNETPHMMXXX</head:BICFI></head:FinInstnId></head:FIId></head:Fr><head:To><head:FIId><head:FinInstnId><head:BICFI>NRLDPHM1XXX</head:BICFI></head:FinInstnId></head:FIId></head:To><head:BizMsgIdr>MSG-EVT-0001</head:BizMsgIdr><head:MsgDefIdr>admi.004.001.02</head:MsgDefIdr><head:CreDt>2026-07-16T09:10:00Z</head:CreDt><head:Sgntr></head:Sgntr></AppHdr><SystemNotificationEvent><SysEvtNtfctn xmlns=\"urn:iso:std:iso:20022:tech:xsd:admi.004.001.02\"><EvtInf><EvtCd>SYSU</EvtCd><EvtDesc>Scheduled maintenance window</EvtDesc></EvtInf></SysEvtNtfctn></SystemNotificationEvent></Message>"
+              },
+              "examples": {
+                "admi.004 system notification": {
+                  "summary": "admi.004 system notification",
+                  "value": "<Message xmlns=\"urn:instapay2019\" xmlns:head=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\"><AppHdr><head:Fr><head:FIId><head:FinInstnId><head:BICFI>BNETPHMMXXX</head:BICFI></head:FinInstnId></head:FIId></head:Fr><head:To><head:FIId><head:FinInstnId><head:BICFI>NRLDPHM1XXX</head:BICFI></head:FinInstnId></head:FIId></head:To><head:BizMsgIdr>MSG-EVT-0001</head:BizMsgIdr><head:MsgDefIdr>admi.004.001.02</head:MsgDefIdr><head:CreDt>2026-07-16T09:10:00Z</head:CreDt><head:Sgntr></head:Sgntr></AppHdr><SystemNotificationEvent><SysEvtNtfctn xmlns=\"urn:iso:std:iso:20022:tech:xsd:admi.004.001.02\"><EvtInf><EvtCd>SYSU</EvtCd><EvtDesc>Scheduled maintenance window</EvtDesc></EvtInf></SysEvtNtfctn></SystemNotificationEvent></Message>"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Notification accepted."
+          }
+        },
+        "tags": [
+          "IPS Payments (CI → Participant)"
+        ]
+      }
+    },
+    "/ips-payments/health-checks": {
+      "put": {
+        "operationId": "InboundController_healthChecks",
+        "summary": "Health-check echo (admn.005 → admn.006)",
+        "description": "The CI validates connectivity; we reply with a signed admn.006 echo response. Payload = admn.005.001.01: AdmnEchoReq/GrpHdr + EchoTxInf (FnctnCd=731, InstrId, InstgAgt, InstdAgt).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "A signed ISO 20022 `<Message>` (envelope urn:instapay2019) wrapping the BAH (head.001) and the business document. The `<head:Sgntr>` element MUST contain a valid W3C XMLDSig signature (RSA-SHA256, enveloped, c14n11). admn.005 echo request",
+          "content": {
+            "application/xml": {
+              "schema": {
+                "type": "string",
+                "format": "xml",
+                "example": "<Message xmlns=\"urn:instapay2019\" xmlns:head=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\"><AppHdr><head:Fr><head:FIId><head:FinInstnId><head:BICFI>BNETPHMMXXX</head:BICFI></head:FinInstnId></head:FIId></head:Fr><head:To><head:FIId><head:FinInstnId><head:BICFI>NRLDPHM1XXX</head:BICFI></head:FinInstnId></head:FIId></head:To><head:BizMsgIdr>MSG-ECHO-1</head:BizMsgIdr><head:MsgDefIdr>admn.005.001.01</head:MsgDefIdr><head:CreDt>2026-07-16T09:00:00Z</head:CreDt><head:Sgntr></head:Sgntr></AppHdr><EchoRequest><AdmnEchoReq xmlns=\"urn:iso:std:iso:20022:tech:xsd:admn.005.001.01\"><GrpHdr><MsgId>ECHO-1</MsgId><CreDtTm>2026-07-16T09:00:00Z</CreDtTm></GrpHdr><EchoTxInf><FnctnCd>731</FnctnCd><InstrId>ECHO-1</InstrId><InstgAgt><FinInstnId><BIC>BNETPHMMXXX</BIC></FinInstnId></InstgAgt><InstdAgt><FinInstnId><BIC>NRLDPHM1XXX</BIC></FinInstnId></InstdAgt></EchoTxInf></AdmnEchoReq></EchoRequest></Message>"
+              },
+              "examples": {
+                "admn.005 echo request": {
+                  "summary": "admn.005 echo request",
+                  "value": "<Message xmlns=\"urn:instapay2019\" xmlns:head=\"urn:iso:std:iso:20022:tech:xsd:head.001.001.01\"><AppHdr><head:Fr><head:FIId><head:FinInstnId><head:BICFI>BNETPHMMXXX</head:BICFI></head:FinInstnId></head:FIId></head:Fr><head:To><head:FIId><head:FinInstnId><head:BICFI>NRLDPHM1XXX</head:BICFI></head:FinInstnId></head:FIId></head:To><head:BizMsgIdr>MSG-ECHO-1</head:BizMsgIdr><head:MsgDefIdr>admn.005.001.01</head:MsgDefIdr><head:CreDt>2026-07-16T09:00:00Z</head:CreDt><head:Sgntr></head:Sgntr></AppHdr><EchoRequest><AdmnEchoReq xmlns=\"urn:iso:std:iso:20022:tech:xsd:admn.005.001.01\"><GrpHdr><MsgId>ECHO-1</MsgId><CreDtTm>2026-07-16T09:00:00Z</CreDtTm></GrpHdr><EchoTxInf><FnctnCd>731</FnctnCd><InstrId>ECHO-1</InstrId><InstgAgt><FinInstnId><BIC>BNETPHMMXXX</BIC></FinInstnId></InstgAgt><InstdAgt><FinInstnId><BIC>NRLDPHM1XXX</BIC></FinInstnId></InstdAgt></EchoTxInf></AdmnEchoReq></EchoRequest></Message>"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Echo response (admn.006)."
+          }
+        },
+        "tags": [
+          "IPS Payments (CI → Participant)"
+        ]
+      }
+    },
+    "/payments": {
+      "post": {
+        "operationId": "PaymentsController_originate",
+        "summary": "Originate an outbound credit transfer",
+        "description": "Builds a signed pacs.008 from the request, submits it to the CI, and returns the resolved outcome (matched pacs.002), a timeout, or a submit rejection.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OriginatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Payments (Our app → InstaPay)"
+        ]
+      },
+      "get": {
+        "operationId": "PaymentsController_list",
+        "summary": "List transactions (JSON) — reconciliation feed",
+        "description": "Returns the JSON transaction journal (inbound + outbound). A counterpart service can poll this (e.g. by a cron with ?since=) to independently verify/reconcile transactions. No XML is ever exposed — only readable JSON.",
+        "parameters": [
+          {
+            "name": "since",
+            "required": false,
+            "in": "query",
+            "description": "ISO timestamp — records updated at/after this (the cron passes its last-run time).",
+            "schema": {
+              "example": "2026-07-16T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "RECEIVED",
+                "COMPLETED",
+                "FAILED",
+                "TIMED_OUT",
+                "REVERSED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "direction",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "OUTBOUND",
+                "INBOUND"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 100,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments (Our app → InstaPay)"
+        ]
+      }
+    },
+    "/payments/in-flight": {
+      "get": {
+        "operationId": "PaymentsController_inFlight",
+        "summary": "Diagnostics: count of in-flight and recently received transactions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments (Our app → InstaPay)"
+        ]
+      }
+    },
+    "/payments/{instructionId}": {
+      "get": {
+        "operationId": "PaymentsController_getOne",
+        "summary": "Get one transaction by Instruction Id (JSON)",
+        "description": "Readable JSON status of a single transaction. Used for status checks/verification.",
+        "parameters": [
+          {
+            "name": "instructionId",
+            "required": true,
+            "in": "path",
+            "description": "The PmtId/InstrId of the transaction.",
+            "schema": {
+              "example": "INSTR8f2c1a4b9d",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The transaction record."
+          },
+          "404": {
+            "description": "No transaction with that Instruction Id."
+          }
+        },
+        "tags": [
+          "Payments (Our app → InstaPay)"
+        ]
+      }
+    },
+    "/audit": {
+      "get": {
+        "operationId": "LedgerController_audit",
+        "summary": "Audit trail (JSON) — verify what came in / was posted",
+        "description": "Every money event and delivery attempt: RECEIVED, ENQUEUED, DELIVERY_ATTEMPT, DELIVERY_OK, DELIVERY_FAILED, DEAD_LETTER. Filter by instructionId, action, since.",
+        "parameters": [
+          {
+            "name": "instructionId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "INSTR8f2c1a4b9d",
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "RECEIVED",
+                "ENQUEUED",
+                "DELIVERY_ATTEMPT",
+                "DELIVERY_OK",
+                "DELIVERY_FAILED",
+                "DEAD_LETTER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "since",
+            "required": false,
+            "in": "query",
+            "description": "ISO timestamp",
+            "schema": {
+              "example": "2026-07-16T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 200,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ledger & Audit"
+        ]
+      }
+    },
+    "/ledger/outbox": {
+      "get": {
+        "operationId": "LedgerController_outbox",
+        "summary": "Outbox status (JSON) — pending / dead-lettered deliveries",
+        "description": "Durable outbox of money events awaiting or failed delivery to the ledger.",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "PENDING",
+                "DELIVERED",
+                "DEAD"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 100,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Ledger & Audit"
+        ]
+      }
+    },
+    "/logs": {
+      "get": {
+        "operationId": "LogsController_query",
+        "summary": "Query persisted logs (JSON)",
+        "description": "Fast, indexed query over the partitioned log table. Filters map to indexed columns: from/to (ts), level, instructionId, correlationId, bizMsgIdr. Requires LOG_DB_ENABLED=true.",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "ISO timestamp (inclusive).",
+            "schema": {
+              "example": "2026-07-16T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "ISO timestamp (inclusive).",
+            "schema": {
+              "example": "2026-07-16T23:59:59Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "level",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "error",
+                "warn",
+                "info",
+                "debug",
+                "verbose"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "instructionId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "INSTR8f2c1a4b9d",
+              "type": "string"
+            }
+          },
+          {
+            "name": "correlationId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "c0ffee-1234",
+              "type": "string"
+            }
+          },
+          {
+            "name": "bizMsgIdr",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "MSG-CT-0001",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 100,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Logs"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "InstaPay ISO 20022 Integration Service",
+    "description": "BancNet / Mastercard IPS participant integration (originator + receiver). Exposes the CI-facing ISO 20022 endpoints and an internal JSON API to originate payments.",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "IPS Payments (CI → Participant)",
+      "description": "Endpoints the Central Infrastructure calls on us"
+    },
+    {
+      "name": "Payments (Our app → InstaPay)",
+      "description": "Internal API to originate outbound credit transfers"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "DebtorDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Juan Dela Cruz",
+            "description": "Payer full name."
+          },
+          "id": {
+            "type": "string",
+            "example": "DBTR001",
+            "description": "Payer identifier (person id)."
+          },
+          "account": {
+            "type": "string",
+            "example": "00123456789",
+            "description": "Payer account number."
+          },
+          "accountType": {
+            "type": "string",
+            "example": "CASH",
+            "description": "Account type proprietary code."
+          }
+        },
+        "required": [
+          "name",
+          "id",
+          "account"
+        ]
+      },
+      "CreditorDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Maria Santos",
+            "description": "Payee full name."
+          },
+          "id": {
+            "type": "string",
+            "example": "CDTR001",
+            "description": "Payee identifier (person id)."
+          },
+          "account": {
+            "type": "string",
+            "example": "00987654321",
+            "description": "Payee account number."
+          },
+          "agentBic": {
+            "type": "string",
+            "example": "BDOMPHMMXXX",
+            "description": "Payee bank BICFI (creditor agent)."
+          }
+        },
+        "required": [
+          "name",
+          "id",
+          "account",
+          "agentBic"
+        ]
+      },
+      "OriginatePaymentDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "example": "1500.00",
+            "description": "Amount as a decimal string."
+          },
+          "currency": {
+            "type": "string",
+            "example": "PHP",
+            "description": "ISO 4217 currency code."
+          },
+          "debtor": {
+            "$ref": "#/components/schemas/DebtorDto"
+          },
+          "creditor": {
+            "$ref": "#/components/schemas/CreditorDto"
+          },
+          "remittanceInfo": {
+            "type": "string",
+            "example": "Payment for invoice 123",
+            "description": "Unstructured remittance text."
+          },
+          "endToEndId": {
+            "type": "string",
+            "example": "E2E-0001",
+            "description": "Caller-supplied end-to-end id; generated if omitted."
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "debtor",
+          "creditor"
+        ]
+      },
+      "PaymentResultDto": {
+        "type": "object",
+        "properties": {
+          "instructionId": {
+            "type": "string",
+            "example": "INSTR8f2c..."
+          },
+          "endToEndId": {
+            "type": "string",
+            "example": "E2E-0001"
+          },
+          "transactionId": {
+            "type": "string",
+            "example": "TX3a91..."
+          },
+          "state": {
+            "type": "string",
+            "example": "COMPLETED",
+            "enum": [
+              "COMPLETED",
+              "FAILED",
+              "TIMED_OUT",
+              "REJECTED_AT_SUBMIT"
+            ],
+            "description": "Final outcome of the originated payment."
+          },
+          "status": {
+            "type": "string",
+            "example": "ACSC",
+            "description": "ISO transaction status when resolved."
+          },
+          "reasonCode": {
+            "type": "string",
+            "example": "AC01",
+            "description": "Reason code on rejection."
+          },
+          "submissions": {
+            "type": "number",
+            "example": 1,
+            "description": "Number of submissions incl. duplicate resubmissions."
+          }
+        },
+        "required": [
+          "instructionId",
+          "endToEndId",
+          "transactionId",
+          "state",
+          "submissions"
+        ]
+      }
+    }
+  }
+}
