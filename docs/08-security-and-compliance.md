@@ -133,4 +133,4 @@ flowchart TD
 
 ---
 
-Back to the **`documentation index`**.
+Back to the **[documentation index](../README.md#documentation)**.

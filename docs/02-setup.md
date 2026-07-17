@@ -211,14 +211,17 @@ backoff, and dead-lettering. See [09 — Ledger & Audit](09-ledger-and-audit.md)
 
 ### Ledger DATABASE (separate, transactional — NOT the logs DB)
 
-The outbox + audit are persisted to a **dedicated, transactional** database, entirely
-**separate** from the [logs DB](#hybrid-db-logging-optional). When disabled, an
-in-memory store is used (dev/test only — **not durable**). Create the tables from
-`db/<engine>/ledger-schema.sql` first.
+The outbox + audit + transaction journal are persisted to a **dedicated,
+transactional** database, entirely **separate** from the
+[logs DB](#hybrid-db-logging-optional). When disabled, in-memory stores are used
+(dev/test only — **not durable**). Tables are auto-scaffolded on first boot from
+`db/<engine>/ledger-schema.sql` and
+`db/<engine>/journal-schema.sql` (or create them yourself).
 
 | Variable | Meaning | Default | When to change |
 | --- | --- | --- | --- |
 | `LEDGER_DB_ENABLED` | Persist the outbox + audit to a database. `false` = in-memory (not durable). | `false` | Set `true` for any real deployment. |
+| `JOURNAL_DB_ENABLED` | Persist the **transaction journal** (the `GET /payments` reconciliation feed, `transactions` table) to the same ledger DB so it survives restarts / multi-instance. | = `LEDGER_DB_ENABLED` | Override only to split behaviour. |
 | `LEDGER_DB_TYPE` | Engine: `postgres`, `mysql`, or `mssql`. | `postgres` | Match your database. |
 | `LEDGER_DB_HOST` | Database host. | `127.0.0.1` | Point at your DB server. |
 | `LEDGER_DB_PORT` | Database port (postgres 5432, mysql 3306, mssql 1433). | `5432` | Match your engine/host. |

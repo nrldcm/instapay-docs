@@ -42,7 +42,7 @@ Called by **your** applications to originate payments. Source:
 | Method | Path | Purpose | Consumes | Produces | Success |
 | --- | --- | --- | --- | --- | --- |
 | `POST` | `/payments` | Originate an outbound credit transfer. Body = `OriginatePaymentDto`. Service reconstructs JSON → signed pacs.008 XML internally. | `application/json` | `application/json` | **201** — `PaymentResultDto` |
-| `GET` | `/payments` | List the JSON transaction journal (inbound + outbound). Filters: `since`, `status`, `direction`, `limit`, `offset`. The counterpart service's reconciliation cron polls this. | — | `application/json` | **200** — `{ count, transactions[] }` |
+| `GET` | `/payments` | List the JSON transaction journal (inbound + outbound). Filters: `since`, `status`, `direction`, `limit`, `offset`. The counterpart service's reconciliation cron polls this — DB-backed (`transactions` table) when `JOURNAL_DB_ENABLED=true`, so the feed survives restarts. | — | `application/json` | **200** — `{ count, transactions[] }` |
 | `GET` | `/payments/:instructionId` | Get one transaction (JSON) by Instruction Id. | — | `application/json` | **200** / **404** |
 | `GET` | `/payments/in-flight` | Diagnostics: `{ pending, received }` counters. | — | `application/json` | **200** |
 
@@ -69,7 +69,14 @@ A reconciliation cron on the counterpart service polls these. Source:
 | `GET` | `/ledger/outbox` | Durable outbox of money events awaiting or failed delivery to the ledger. | `status` (`PENDING` \| `DELIVERED` \| `DEAD`), `limit` | `application/json` | **200** — `{ count, events[] }` |
 
 > Backed by the in-memory stores by default, or the **dedicated, transactional
-> ledger DB** when `LEDGER_DB_ENABLED=true` (separate from the logs DB).
+> ledger DB** when `LEDGER_DB_ENABLED=true` (separate from the logs DB). The
+> transaction journal behind `GET /payments` follows `JOURNAL_DB_ENABLED`
+> (defaults to `LEDGER_DB_ENABLED`).
+>
+> **Try the full loop locally:** `npm run counterpart:example` starts a
+> `reference counterpart ledger` —
+> an idempotent `POST /ledger/events` intake plus a reconciliation poller
+> against `GET /payments?since=`.
 
 ## Logs query (JSON) — `/logs`
 

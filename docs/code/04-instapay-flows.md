@@ -206,7 +206,7 @@ sequenceDiagram
     IC->>V: accept(xml) → parse/verify/XSD
     V-->>IC: ParsedMessage (kind = PaymentCancellation)
     IC->>CF: handleCancellation(parsed)
-    CF->>S: wasReceived(OrgnlInstrId)?
+    CF->>S: wasReceived(OrgnlInstrId)?<br/>(memory fast path, then journal —<br/>matches even after a restart)
     alt matched
         CF->>A: reversePayment(...) → ledger.postReversal
         CF->>CF: journal.update(REVERSED)
@@ -255,24 +255,42 @@ Key methods: `add`, `get`, `resolve(instrId, status, reasonCode)` (sets final st
 and fires the waiter callback), `markTimedOut`, `incrementSubmissions`,
 `recordReceived` / `wasReceived`, and `snapshot()` → `{ pending, received }`.
 
-> **In-memory only:** state is not shared across processes and does not survive a
-> restart. This matches the integration-only scope. Swap in Redis/Postgres behind
-> the same interface when you run more than one instance — see
-> [09 — Extending](09-extending.md).
+> **In-memory by design:** the *waiter callbacks* (a parked `POST /payments`
+> request) are inherently process-local — they cannot survive a restart because
+> the HTTP request itself would be gone. Everything that *should* outlive the
+> process now does: the transaction journal is DB-backed (below) and cancellation
+> matching reads it, so a restart only loses actively-waiting requests (they
+> resolve as `TIMED_OUT` on the caller's side and reconcile via `GET /payments`).
 
 ---
 
 ## The transaction journal
 
 `state/transaction.journal.ts` is
-an in-memory record of every transaction (protocol-level, **not** the money ledger),
-keyed by Instruction Id. A `TxRecord` holds: `instructionId`, `endToEndId`,
+a record of every transaction (protocol-level, **not** the money ledger), keyed by
+Instruction Id. A `TxRecord` holds: `instructionId`, `endToEndId`,
 `transactionId`, `direction` (`INBOUND`/`OUTBOUND`), `amount`, `currency`,
 `counterpartyName`, `counterpartyBic`, `status` (`PENDING` / `RECEIVED` /
 `COMPLETED` / `FAILED` / `TIMED_OUT` / `REVERSED`), `reasonCode`, and
 `createdAt` / `updatedAt` timestamps. `record`, `update`, `get`, and `list(filter)`
-back the `GET /payments` reconciliation feed. Its shape is detailed in
-[08 — Data Model](08-data-model.md#the-in-memory-transaction-journal).
+(all async) back the `GET /payments` reconciliation feed.
+
+**Two implementations behind one abstract token** (bound in
+`instapay.module.ts`, same pattern as the
+ledger stores):
+
+| Implementation | When | Where it lives |
+| --- | --- | --- |
+| `InMemoryTransactionJournal` | default (dev/test — zero dependencies) | a `Map`; lost on restart |
+| `DbTransactionJournal` | `JOURNAL_DB_ENABLED=true` (defaults to `LEDGER_DB_ENABLED`) | the **dedicated ledger database**, `transactions` table (`db/<engine>/journal-schema.sql`) — survives restarts, shared across instances |
+
+DB writes are **best-effort** (a journal blip must never fail a payment — the
+money record is the outbox, which *is* fail-fast); reads throw so `GET /payments`
+surfaces a DB outage instead of silently returning an empty feed. The
+cancellation flow matches a `camt.056` against the journal too (INBOUND +
+`RECEIVED`/`COMPLETED`/`REVERSED`), so **reversals still match after a restart or
+on another instance** — the in-memory `wasReceived` set is just the fast path.
+Shape detail: [08 — Data Model](08-data-model.md#the-transaction-journal).
 
 ---
 

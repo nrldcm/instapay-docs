@@ -1,12 +1,13 @@
 # 08 — Data Model
 
-> **In plain terms.** This is the **shape of what the service remembers**. Three
+> **In plain terms.** This is the **shape of what the service remembers**. Four
 > durable tables live in databases: a **to-do list** of money movements
-> (`outbox_events`), a permanent **logbook** of every step (`audit_log`), and an
-> optional searchable **diary** of application logs (`app_logs`). Plus one thing
-> kept only in memory: a lightweight **transaction journal** for reconciliation.
-> The money tables and the log table live in **two separate databases** on purpose —
-> a logging problem must never touch money handling.
+> (`outbox_events`), a permanent **logbook** of every step (`audit_log`), the
+> **transaction journal** for reconciliation (`transactions`), and an optional
+> searchable **diary** of application logs (`app_logs`). The money tables and the
+> log table live in **two separate databases** on purpose — a logging problem
+> must never touch money handling. (In dev/test with no DB configured, the
+> journal and money stores fall back to memory.)
 
 > **The DDL/SQL files are being finalized by another agent.** This page describes
 > the **columns and their meaning** at the model level and *why* they are
@@ -26,8 +27,8 @@ constraint** = a uniqueness rule that stops the same thing being recorded twice.
 
 | | **Ledger DB** | **Logs DB** |
 | --- | --- | --- |
-| Tables | `outbox_events`, `audit_log` | `app_logs` |
-| Config | `LEDGER_DB_*` | `DB_*` / `LOG_DB_*` |
+| Tables | `outbox_events`, `audit_log`, `transactions` | `app_logs` |
+| Config | `LEDGER_DB_*` (+ `JOURNAL_DB_ENABLED`) | `DB_*` / `LOG_DB_*` |
 | Nature | Transactional, must-not-lose | Best-effort observability |
 | DataSource | `ledger-datasource.ts` | `logs-datasource.ts` |
 
@@ -123,12 +124,22 @@ targeted indexes on `instruction_id` / `biz_msg_idr` / `correlation_id` for the
 
 ---
 
-## The in-memory transaction journal
+## The transaction journal
 
-Not a database — an in-memory map in
-`transaction.journal.ts` that
-backs the `GET /payments` reconciliation feed. It survives only while the process
-runs. A `TxRecord`:
+Backs the `GET /payments` reconciliation feed
+(`transaction.journal.ts`).
+Two implementations behind one abstract token:
+
+- **In-memory map** (default) — survives only while the process runs (dev/test).
+- **`transactions` table** in the dedicated **ledger database** when
+  `JOURNAL_DB_ENABLED=true` (defaults to `LEDGER_DB_ENABLED`) — DDL in
+  `db/<engine>/journal-schema.sql`,
+  auto-scaffolded on first connect, keyed on `instruction_id` with composite
+  indexes on `(updated_at)`, `(status, updated_at)`, `(direction, updated_at)`
+  to serve the `?since=` reconciliation poll. Survives restarts and is shared
+  across instances.
+
+A `TxRecord`:
 
 | Field | Meaning |
 | --- | --- |
@@ -142,8 +153,10 @@ runs. A `TxRecord`:
 | `createdAt`, `updatedAt` | ISO timestamps. |
 
 > The **in-flight store** (`inflight.store.ts`)
-> is also in-memory but transient (only tracks payments *awaiting a reply* and
-> received ids for cancellation matching) — see
+> stays in-memory by design: it holds the *waiter callbacks* of parked
+> `POST /payments` requests, which cannot outlive the process anyway.
+> Cancellation matching no longer depends on it — it reads the (DB-backed)
+> journal — see
 > [04](04-instapay-flows.md#in-flight-matching-timeout--duplicates--inflightstore).
 
 ---

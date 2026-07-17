@@ -111,7 +111,7 @@ flowchart TD
 | `ledger/` | Durable outbox + audit + retrying dispatcher; queue/HTTP delivery. | [05](05-ledger-money-safe.md) |
 | `common/logging/` + `logs/` | Console + rotating files, optional DB logging, query APIs. | [06](06-logging-and-query.md) |
 | `main.ts` + `microservice/` | Bootstrap, run modes, TLS, health, Swagger. | [07](07-runtime-and-modes.md) |
-| Persisted data | `outbox_events`, `audit_log`, `app_logs`, in-memory journal. | [08](08-data-model.md) |
+| Persisted data | `outbox_events`, `audit_log`, `transactions` (journal), `app_logs`. | [08](08-data-model.md) |
 | Extension seams | AccountService, DB stores, message patterns/types. | [09](09-extending.md) |
 | `common/errors` + `filters` | Typed ISO errors + global exception filter. | [10](10-error-handling.md) |
 

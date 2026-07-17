@@ -21,7 +21,8 @@ Two independent record systems observe every flow:
 
 - **Transaction journal** (protocol view) — one record per payment, status
   `PENDING → COMPLETED / FAILED / TIMED_OUT / RECEIVED / REVERSED`. Read via
-  `GET /payments`.
+  `GET /payments`. Persisted to the ledger DB (`transactions` table) when
+  `JOURNAL_DB_ENABLED=true`, so the reconciliation feed survives restarts.
 - **Ledger outbox + audit trail** (money view) — one durable event per money
   movement plus an append-only audit line for everything that happens to it.
   Read via `GET /ledger/outbox` and `GET /audit`.

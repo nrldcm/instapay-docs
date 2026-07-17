@@ -90,7 +90,7 @@ This is deliberately a **thin integration layer**. It intentionally leaves the
 | Crediting/debiting real accounts | Your ledger — the built-in crediting is a **stub** |
 | KYC / customer onboarding | Your compliance systems |
 | User login / authentication of end-users | Your app |
-| A required application database | Nothing — in-flight state is kept in memory |
+| A required application database | Nothing to *run* — everything falls back to memory. Point `LEDGER_DB_*` at a database and the money outbox, audit trail, and transaction journal become durable. |
 
 The place where "credit the beneficiary" happens is a clearly-marked **stub**
 (`src/instapay/account.service.ts`) that accepts everything by default. You replace

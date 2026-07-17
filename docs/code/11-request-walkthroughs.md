@@ -45,7 +45,7 @@ matching, and ledger posting all happen inside.
 | 1 | `payments.controller.ts` · `PaymentsController.originate()` | Entry point. The body was already validated against `OriginatePaymentDto` (amount format, BIC pattern, name lengths) by the global pipe. Delegates straight to the flow. |
 | 2 | `originator.flow.ts` · `OriginatorFlow.originate()` | Generates the three ids — `instructionId` (`INSTR…`), `endToEndId` (caller's or `E2E…`), `transactionId` (`TX…`) via `id.util.ts`. |
 | 3 | `inflight.store.ts` · `InFlightStore.add()` | Registers the payment as **in-flight**, keyed by `instructionId` — this is what the async reply will be matched against later. |
-| 4 | `transaction.journal.ts` · `TransactionJournal.record()` | Journal record `OUTBOUND / PENDING` — visible immediately at `GET /payments`. |
+| 4 | `transaction.journal.ts` · `TransactionJournal.record()` | Journal record `OUTBOUND / PENDING` — visible immediately at `GET /payments`. DB-backed (`transactions` table in the ledger DB) when `JOURNAL_DB_ENABLED=true`, so the feed survives restarts. |
 | 5 | `message.builder.ts` · `MessageBuilder.buildCreditTransfer()` | Builds the `pacs.008` XML: `<Message>` envelope + BAH (head.001) + `FIToFICstmrCdtTrf` with debtor/creditor/amount. |
 | 6 | `sign.service.ts` · `SignService.sign()` | Embeds a W3C XMLDSig signature (RSA-SHA256, enveloped, c14n11) into `<head:Sgntr>`. |
 | 7 | `ips.client.ts` · `IpsClient.submitServiceRequest()` | `POST {CI_BASE_URL}/ips-payments/service-requests` over (m)TLS. Never throws — returns `{ status, body }`. **Not 202 → step 12 with `REJECTED_AT_SUBMIT`.** |
@@ -73,7 +73,7 @@ flowchart LR
 
 | Endpoint | Path through the code |
 | --- | --- |
-| `GET /payments` | `PaymentsController.list()` → `TransactionJournal.list(filter)` (filters `since/status/direction/limit/offset` applied in memory) → `{ count, transactions[] }`. |
+| `GET /payments` | `PaymentsController.list()` → `TransactionJournal.list(filter)` — in-memory map by default, or an indexed SELECT on the `transactions` table (`db-transaction.journal.ts`) when `JOURNAL_DB_ENABLED=true` → `{ count, transactions[] }`. |
 | `GET /payments/in-flight` | `PaymentsController.inFlight()` → `InFlightStore.snapshot()` → `{ pending, received }`. Declared **before** the param route so `in-flight` is not captured as an `:instructionId`. |
 | `GET /payments/:instructionId` | `PaymentsController.getOne()` → `TransactionJournal.get(id)` → record, or `NotFoundException` → the exception filter's `HttpException` branch → **404 JSON**. |
 
@@ -112,7 +112,7 @@ flowchart LR
 | --- | --- | --- |
 | 1 | `InboundController.paymentInstructions()` | Entry point (raw XML). |
 | 2 | `InboundValidationService.accept()` | Parse → signature → XSD. The parser sets `parsed.kind`. |
-| 3a | *if `kind === 'PaymentCancellation'` (camt.056)* → `cancellation.flow.ts` · `handleCancellation()` | `InFlightStore.wasReceived(OrgnlInstrId)`? **Matched:** `AccountService.reversePayment()` → `LedgerService.postReversal()` (REVERSAL → outbox + audit), journal → `REVERSED`. **Unknown:** log, no action — nothing to undo. Both paths: build + sign a `pacs.002 ACTC` → **200 XML** (so the CI stops re-sending). |
+| 3a | *if `kind === 'PaymentCancellation'` (camt.056)* → `cancellation.flow.ts` · `handleCancellation()` | Was `OrgnlInstrId` received by us? Checks the in-memory store (fast path) **then the journal** (INBOUND + `RECEIVED`/`COMPLETED`/`REVERSED`) — so a match survives a restart. **Matched:** `AccountService.reversePayment()` → `LedgerService.postReversal()` (REVERSAL → outbox + audit), journal → `REVERSED`. **Unknown:** log, no action — nothing to undo. Both paths: build + sign a `pacs.002 ACTC` → **200 XML** (so the CI stops re-sending). |
 | 3b | *else (a `pacs.002` confirmation)* | Fire-and-forget acknowledgement → **204**. |
 
 ---

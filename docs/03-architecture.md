@@ -246,9 +246,11 @@ sequenceDiagram
   keyed by **Instruction Id**; the async `pacs.002` is matched on its
   `OrgnlInstrId`. Received instruction ids are remembered separately so a later
   `camt.056` cancellation can be matched.
-- State is **in memory**: it is not shared across processes and does not survive a
-  restart. This matches the integration-only scope; swap in a shared store when you
-  add a ledger.
+- The in-flight store's **waiter callbacks** are in memory by design — a parked
+  `POST /payments` request cannot outlive its process. Everything that should
+  survive does: the **transaction journal** is DB-backed (`JOURNAL_DB_ENABLED`,
+  `transactions` table in the ledger DB) and `camt.056` cancellation matching
+  reads it, so reversals match after a restart or on another instance.
 
 ---
 

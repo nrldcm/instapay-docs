@@ -52,16 +52,91 @@ the InstaPay world. Alphabetical within groups.
 
 ## Status & reason codes
 
+Every code you can meet in a message, a reject, or an API response — what it
+means and **when this service produces or receives it**.
+
+### Transaction status codes (`TxSts` in `pacs.002`)
+
+The InstaPay `pacs.002` schema restricts the transaction status to exactly these
+four values:
+
+| Code | Name | Meaning | When you see it |
+| --- | --- | --- | --- |
+| **ACTC** | *AcceptedTechnicalValidation* | The payment passed validation and was accepted — InstaPay's "success". | We reply `ACTC` for an accepted inbound payment and an acknowledged cancellation; a `pacs.002 ACTC` for a payment we sent means it **completed**. |
+| **ACWP** | *AcceptedWithoutPosting* | Accepted, but not yet posted to the beneficiary account. | May arrive as the async result of a payment we originated. |
+| **RCVD** | *Received* | The message was received and is still in process. | Interim state; the in-flight store records it if no final status is given. |
+| **RJCT** | *Rejected* | The payment was refused — the **reason code** says why. | We send `RJCT` when beneficiary validation fails; receiving `RJCT` marks our originated payment `FAILED`. |
+
+### Structural reject reason codes (in `admi.002`)
+
+Sent (HTTP 400) when an inbound message fails the validation gate **before** any
+business logic — see the [inbound gate](code/11-request-walkthroughs.md#cash-in--post-ips-paymentsservice-requests-the-network-delivers-money).
+
+| Code | Meaning | Raised by |
+| --- | --- | --- |
+| **DU01** | Message is **unparseable** — not well-formed XML / not a recognized `<Message>` envelope. | the message parser |
+| **DS02** | **Signature validation failed** — the XMLDSig in `<head:Sgntr>` is missing, altered, or signed by the wrong key. | the signature verifier |
+| **DU02** | **Schema validation failed** — parses fine but violates the InstaPay XSDs (missing/invalid element). | the XSD validator |
+
+### Business reject reason codes (in `pacs.002 RJCT`)
+
+ISO *ExternalStatusReason* codes explaining **why** a syntactically valid payment
+was refused. The ones this service uses / expects most:
+
+| Code | Meaning | When |
+| --- | --- | --- |
+| **AC01** | *IncorrectAccountNumber* — the account is unknown/incorrect. | Default reject when your `validateBeneficiary` hook says the account doesn't exist. |
+| **AC06** | *BlockedAccount* — the account exists but is blocked. | Return it from `validateBeneficiary` for frozen/blocked wallets. |
+| **AM04** | *InsufficientFunds* — not enough balance to settle. | Typically arrives on a `RJCT` for a payment we originated. |
+
+> The full ISO list is much longer (AB, AC, AG, AM, BE, RC, TM, … families); any
+> code your core returns in the `BeneficiaryCheck.reasonCode` is passed through
+> verbatim into the signed `pacs.002`.
+
+### System error codes (JSON `Errors.Error[].ReasonCode`)
+
+Unexpected faults return **HTTP 500 + JSON** (never XML), shaped per Appendix B:
+
+| Code | Meaning |
+| --- | --- |
+| **SYS01** | Generic/unclassified system error (the default for an unexpected exception). |
+| **SYS…** | Any `IsoSystemError` thrown with its own code passes through (e.g. a DB outage); `Recoverable: true/false` tells the caller whether a retry can help. |
+
+### Journal statuses (`GET /payments` → `status`)
+
+The readable lifecycle of a transaction in the reconciliation feed:
+
+| Status | Direction | Meaning |
+| --- | --- | --- |
+| **PENDING** | outbound | Originated, submitted, still awaiting the async result. |
+| **RECEIVED** | inbound | An inbound payment arrived and is being credited. |
+| **COMPLETED** | both | Final success — outbound got `ACTC/ACWP/RCVD`; inbound was credited & ACKed. |
+| **FAILED** | both | Final failure — outbound got `RJCT` (or was rejected at submit); inbound failed beneficiary validation. `reasonCode` says why. |
+| **TIMED_OUT** | outbound | No `pacs.002` arrived within the SLA after all DUPL resubmissions. |
+| **REVERSED** | inbound | A matched `camt.056` cancellation reversed the credit. |
+
+### Ledger outbox & audit codes (`GET /ledger/outbox`, `GET /audit`)
+
+| Code | Where | Meaning |
+| --- | --- | --- |
+| **CREDIT / DEBIT / REVERSAL** | outbox `type` | The money-event type: credit the beneficiary (cash-in), debit for a sent payment (cash-out), or undo a credit (cancellation). |
+| **PENDING** | outbox `status` | Awaiting delivery to your core ledger (or between retries). |
+| **DELIVERED** | outbox `status` | Successfully delivered — terminal. |
+| **DEAD** | outbox `status` | Gave up after `LEDGER_MAX_ATTEMPTS` — kept for reconciliation, never deleted. |
+| **RECEIVED** | audit `action` | Proof an inbound payment arrived (recorded before we ACK). |
+| **ENQUEUED** | audit `action` | A money event was written to the durable outbox. |
+| **DELIVERY_ATTEMPT / DELIVERY_OK / DELIVERY_FAILED** | audit `action` | One delivery try and its outcome. |
+| **DEAD_LETTER** | audit `action` | The event was moved to DEAD after exhausting retries. |
+
+### Other codes & flags
+
 | Term | Meaning |
 | --- | --- |
-| **ACTC** | *AcceptedTechnicalValidation* — the payment was accepted (InstaPay "success"). |
-| **ACWP** | *AcceptedWithoutPosting* — accepted, not yet posted to the account. |
-| **RCVD** | *Received* — the message was received and is in process. |
-| **RJCT** | *Rejected* — the payment was refused (see the reason code). |
-
-> The InstaPay `pacs.002` schema restricts the transaction status (`TxSts`) to exactly these four values: `ACTC`, `ACWP`, `RCVD`, `RJCT`.
-| **Reason code** | An ISO code explaining a rejection, e.g. `AC01` (incorrect/unknown account), `AC06` (blocked), `AM04` (insufficient funds). |
-| **DUPL** | The *duplicate* flag (`CpyDplct`) set when resubmitting the same instruction after a timeout. |
+| **DUPL** | The *duplicate* flag (`CpyDplct` in the BAH) set when resubmitting the **same** instruction after a timeout — tells the network "same payment, don't double-process". |
+| **731** | The echo function code (`FnctnCd`) carried in `admn.005`/`admn.006` health-check messages. |
+| **Id prefixes** (`INSTR…`, `E2E…`, `TX…`, `MSG…`, `GRP…`, `ECHO…`, `SON…`, `SOF…`) | Generated identifiers: **INSTR** instruction id, **E2E** end-to-end id, **TX** transaction id, **MSG** business message id (BAH), **GRP** group header id, **ECHO** health-check, **SON/SOF** sign-on/sign-off. |
+| **SDVA** | The service-level code (`SvcLvl`) used on InstaPay credit transfers (same-day value). |
+| **SLEV** | Charge bearer *FollowingServiceLevel* — charges applied per the scheme's service level. |
 
 ## Roles in a payment
 

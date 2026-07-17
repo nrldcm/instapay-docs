@@ -119,6 +119,12 @@ money handling, and vice versa.
   DataSource is built lazily and best-effort, so a briefly-unreachable DB never
   crashes boot.
 
+The **transaction journal** (the `GET /payments` reconciliation feed) follows the
+same pattern in the same database: `JOURNAL_DB_ENABLED` (defaults to
+`LEDGER_DB_ENABLED`) persists it to the `transactions` table
+(`db/<engine>/journal-schema.sql`) so reconciliation survives restarts
+and works across multiple instances.
+
 Set the connection with `LEDGER_DB_TYPE` / `HOST` / `PORT` / `USERNAME` / `PASSWORD`
 / `DATABASE` / `SCHEMA` / `SSL` — see [Setup](02-setup.md#ledger-database-separate-transactional--not-the-logs-db).
 
@@ -205,4 +211,4 @@ Every variable is explained in [02 — Setup](02-setup.md#ledger-delivery-money-
 
 ---
 
-Back to the **`documentation index`**.
+Back to the **[documentation index](../README.md#documentation)**.
